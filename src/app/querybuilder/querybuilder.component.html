@@ -1,4 +1,7 @@
-<p>
-  querybuilder works!
-</p>
-<app-treeview></app-treeview>
+<app-queryholder></app-queryholder>
+<mat-grid-list cols="8" item-width="100%">
+    <mat-grid-tile colspan="3" rowspan="1" ><app-treeview></app-treeview></mat-grid-tile>
+    <mat-grid-tile colspan="5" rowspan="1" ><app-tableholder></app-tableholder></mat-grid-tile>
+  </mat-grid-list>
+  <app-treeview></app-treeview>
+  <app-tableholder></app-tableholder>

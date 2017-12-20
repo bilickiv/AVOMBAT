@@ -7,4 +7,9 @@ import { Component } from '@angular/core';
 })
 export class AppComponent {
   title = 'app';
+  navLinks = [
+    {label: 'Querybuilder', link: '/query'},
+    {label: 'Database magamenet', link: 'import'},
+    {label: 'Visualisation', link: 'foggy-tab'},
+  ];
 }

@@ -1,8 +1,16 @@
 <!--The content below is only a placeholder and can be replaced.-->
 <div style="text-align:center">
-<nav>
-  <a routerLink="/query">Query Builder</a>
-  <a routerLink="/import">Import handler</a>
-</nav>
+    <mat-toolbar color="primary">
+        <span>AVOMBAT</span>
+    </mat-toolbar>
+    <nav mat-tab-nav-bar>
+        <a mat-tab-link
+           *ngFor="let link of navLinks"
+           [routerLink]="link.link"
+           routerLinkActive #rla="routerLinkActive"
+           [active]="rla.isActive">
+          {{link.label}}
+        </a>
+      </nav>
 <router-outlet></router-outlet>
 

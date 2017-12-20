@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { TreeModule, ITreeState } from 'angular-tree-component';
+import { StorageService } from '../storage.service';
+
 const getChildren = () => new Promise((resolve) => {
   setTimeout(() => resolve([
     { id: 5, name: 'child2.1', children: [] },
@@ -15,30 +17,20 @@ const getChildren = () => new Promise((resolve) => {
   styleUrls: ['./treeview.component.css']
 })
 export class TreeviewComponent implements OnInit {
-  constructor() { }
+  nodes = [];
+  constructor(private node: StorageService) { 
+  }
 
   ngOnInit() {
+    this.getList()
   }
   state: ITreeState = localStorage.treeState && JSON.parse(localStorage.treeState);
   options = {
     getChildren
   };
-
-  nodes = [
-    {
-      id: 1,
-      name: 'root1',
-      children: [
-        { id: 2, name: 'child1' },
-        { id: 3, name: 'child2' }
-      ]
-    },
-    {
-      id: 4,
-      name: 'root2',
-      hasChildren: true
-    }
-  ];
+  getList(): void {
+    this.nodes = this.node.getList()
+  }
 
   setState(state: ITreeState) {
     localStorage.treeState = JSON.stringify(state);
