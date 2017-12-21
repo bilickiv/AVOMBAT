@@ -1,7 +1,6 @@
-<app-queryholder></app-queryholder>
-<mat-grid-list cols="8" item-width="100%">
-    <mat-grid-tile colspan="3" rowspan="1" ><app-treeview></app-treeview></mat-grid-tile>
-    <mat-grid-tile colspan="5" rowspan="1" ><app-tableholder></app-tableholder></mat-grid-tile>
+<mat-grid-list cols="8" item-width="100%" >
+    <mat-grid-tile  colspan="8" rowspan="1" [style.background]="'lightblue'" ><app-queryholder ></app-queryholder>
+    </mat-grid-tile>    
+    <mat-grid-tile  colspan="2" rowspan="8" [style.background]="'lightblue'" ><app-treeview></app-treeview></mat-grid-tile>
+    <mat-grid-tile colspan="6" rowspan="8" [style.background]="'lightgreen'"><app-tableholder></app-tableholder></mat-grid-tile>
   </mat-grid-list>
-  <app-treeview></app-treeview>
-  <app-tableholder></app-tableholder>
