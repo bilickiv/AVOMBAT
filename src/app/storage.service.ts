@@ -5,6 +5,28 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 @Injectable()
 export class StorageService {
   private bookURL = 'http://localhost:9200/';
+  nodes = [
+    {
+      id: 1,
+      name: 'Name',
+      children: [
+        { id: 2, name: 'Hydrogen' },
+        { id: 3, name: 'Helium' },
+        { id: 4, name: 'Lithium' },
+        { id: 5, name: 'Beryllium' }
+      ]
+    },
+    {
+      id: 4,
+      name: 'Weight',
+      children: [
+        { id: 5, name: '1.0079' },
+        { id: 6, name: 'Helium' },
+        { id: 7, name: 'Lithium' },
+        { id: 8, name: 'Beryllium' }
+      ]
+    }
+  ];
   httpOptions = {
     headers: new HttpHeaders({ 'Content-Type': 'application/json' })
   };
@@ -18,21 +40,5 @@ export class StorageService {
   getList(): any {
     return this.nodes;
   }
-  nodes = [
-    {
-      id: 1,
-      name: 'root1',
-      children: [
-        { id: 2, name: 'child1' },
-        { id: 3, name: 'child2' },
-        { id: 2, name: 'child1' },
-        { id: 3, name: 'child2' }
-      ]
-    },
-    {
-      id: 4,
-      name: 'root2',
-      hasChildren: true
-    }
-  ];
+  
 }
