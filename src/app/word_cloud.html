@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Word Cloud</title>
+
+    <script src="../static/node_modules/elasticsearchjs/elasticsearch.js"></script>
+    <style>
+        td {
+            padding: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<table id="checkboxTable">
+     
+    <tr id="tableRow1">
+    </tr>
+
+</table>
+
+
+<script>
+
+    var counter = 0;
+    var source = [];
+
+    var clientConfig = {
+        host: "http://localhost:9200/"
+    };
+
+    var client = new elasticsearch.Client(clientConfig);
+    var connIndex = {
+        index: "estc"
+    };
+
+
+    var mapping;
+    var TDS = [];
+    var everyWord = {};
+
+    client.indices.getMapping(connIndex, function (error, response) {
+        var dbType;
+        if (error) {
+            console.log(error);
+        } else {
+            mapping = response[connIndex["index"]]["mappings"];
+            if (Object.keys(mapping).toString() === "xml") {
+                dbType = "xml";
+            } else {
+                dbType = "csv";
+            }
+            mapping = mapping[dbType]["properties"];
+
+        }
+        makeCheckBoxes();
+
+    });
+
+    function makeCheckBoxes() {
+        var rowCount = 1;
+        var rowWidth = 0;
+        var tableElement = document.getElementById("checkboxTable");
+        trElement = document.getElementById("tableRow1");
+        var mappingLength = Object.keys(mapping).length;
+        var fieldNames = Object.keys(mapping);
+        for (i = 0; i < mappingLength; i++) {
+            TDS.push(fieldNames[i]);
+            var newTD = "<td><input type=\"checkbox\" id=\"" + fieldNames[i] + "\">" + fieldNames[i] + "<br></td>";
+
+            var dummyElement = document.createElement("test");
+            dummyElement.innerHTML = newTD;
+            document.body.appendChild(dummyElement);
+            rowWidth += dummyElement.offsetWidth;
+            document.body.removeChild(dummyElement);
+
+            if (rowWidth > window.innerWidth - 50) {
+                rowCount++;
+                tableElement.innerHTML += "<tr id=\"tableRow" + rowCount + "\"</tr>";
+                //console.log(tableElement);
+                trElement = document.getElementById("tableRow" + rowCount + "");
+                rowWidth = 0;
+
+            }
+            trElement.innerHTML += newTD;
+
+        }
+
+        // console.log(document.getElementById("authorsTD").offsetWidth);
+        tableElement.innerHTML += "<tr><td><input onclick=\"setUpESConfig()\" id=\"submitButton\" type=\"submit\"><br></td></tr>"
+        //console.log(trElement);
+    }
+
+
+    function doSearch() {
+        client.search({
+                "index": connIndex["index"],
+                "scroll": "30s",
+                "_source": source
+
+            }, function getWords(error, response) {
+                if (error) {
+                    console.log(error);
+                }
+                else {
+                    countWords(response);
+                    counter += response.hits.hits.length;
+                    if (response.hits.total !== counter) {
+                        client.scroll({
+                            scrollId: response._scroll_id,
+                            scroll: "30s"
+                        }, getWords)
+                    } else {
+                        console.log(everyWord);
+                        source = [];
+                        everyWord = {};
+                        counter = 0;
+                    }
+                }
+            }
+        )
+    }
+
+    function countWords(response) {
+
+        response.hits.hits.forEach(function (hit) {
+            var hits = hit["_source"];
+            for (key in hits) {
+                var words = hits[key].split(" ");
+                for (i = 0; i < words.length; i++) {
+                    var singleWord = words[i].replace(/[^A-Za-zÖÜÓŐÚÉÁŰÍöüóőúáűéí]*/g, "");
+                    if (singleWord.length > 1) {
+                        if (everyWord.hasOwnProperty(singleWord)) {
+                            everyWord[singleWord]["count"]++;
+                        } else {
+                            everyWord[singleWord] = {
+                                "count": 1
+                            };
+                        }
+                    }
+                }
+            }
+        });
+
+
+    }
+
+    function setUpESConfig() {
+        for (i = 0; i < TDS.length; i++) {
+            if (document.getElementById(TDS[i]).checked) {
+                source.push(TDS[i]);
+            }
+
+        }
+        console.log(source);
+        doSearch();
+
+    }
+</script>
+
+</body>
+</html>

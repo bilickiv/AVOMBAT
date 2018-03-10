@@ -18,19 +18,24 @@ const getChildren = () => new Promise((resolve) => {
 })
 export class TreeviewComponent implements OnInit {
   nodes = [];
+  el;
   state: ITreeState = localStorage.treeState && JSON.parse(localStorage.treeState);
   options = {
     getChildren
   };
-  constructor(private node: StorageService) { 
+  constructor(private node: StorageService) {
+    this.el = node;
+    this.el.connect();
+  }
+  public ping() {
+    this.el.getPrice();
+  }
+  ngOnInit() {
+    this.getList();
   }
 
-  ngOnInit() {
-    this.getList()
-  }
-  
   getList(): void {
-    this.nodes = this.node.getList()
+    this.nodes = this.node.getList();
   }
 
   setState(state: ITreeState) {

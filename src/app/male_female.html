@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="../node_modules/chartjs/dist/Chart.js"></script>
+    <script src="../node_modules/hammerjs/hammer.min.js"></script>
+    <script src="../node_modules/chartjs-plugin-zoom/chartjs-plugin-zoom.js"></script>
+    <title>1</title>
+<style>
+    #slidecontainer {
+
+    }
+
+    .slider {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 15px;
+        border-radius: 5px;
+        background: #d3d3d3;
+        outline: none;
+        opacity: 0.7;
+        -webkit-transition: .2s;
+        transition: opacity .2s;
+    }
+
+    .slider:hover {
+        opacity: 1;
+    }
+
+    .slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 25px;
+        height: 25px;
+        border-radius: 50%;
+        background: #4CAF50;
+        cursor: pointer;
+    }
+
+    .slider::-moz-range-thumb {
+        width: 25px;
+        height: 25px;
+        border-radius: 50%;
+        background: #4CAF50;
+        cursor: pointer;
+    }
+</style>
+</head>
+
+<body>
+
+<div class="chartDiv">
+    <div class="wrapper" id="chwrapper">
+        <canvas id="chartCanvas"></canvas>
+    </div>
+    <div class="toolbar">
+        <button onclick="change_line_dataset('agg')">Line Chart Aggragated Data</button>
+        <button onclick="change_line_dataset('norm')">Line Chart Normalised Data</button>
+        <button id="pieButton" onclick="show_pie_chart()">Pie Chart</button>
+
+        <button id="saveButtonIMG" onclick="saveBase64AsFile()">Export Image</button>
+        <button id="saveButtonCSV" onclick="saveData()">Export Data(CSV)</button>
+
+
+        <div class="slides">
+            <div id="startslidecontainer">
+                <input oninput="set_dataset('start',this.value)" type="range" min="1" max="100" value="50"
+                       class="slider"
+                       id="startRange">
+
+                <p>Start Year: <span id="sYear"></span></p>
+            </div>
+
+            <div id="endslidecontainer">
+                <input oninput="set_dataset('end',this.value)" type="range" min="1" max="100" value="50" class="slider"
+                       id="endRange">
+
+                <p>End Year: <span id="eYear"></span></p>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    var startRangeElement = document.getElementById("startRange");
+    var endRangeElement = document.getElementById("endRange");
+
+    var sRangeValue = document.getElementById("sYear");
+    var eRangeValue = document.getElementById("eYear");
+    var canvas = document.getElementById("chartCanvas");
+    var CanvasContext = canvas.getContext("2d");
+    var slidesClass = document.getElementsByClassName("slides");
+    var chartType = "";
+
+
+    const colors = {
+        grey: {
+            fill: '#e0e0e0',
+            stroke: '#919191'
+
+        },
+        blue: {
+            fill: '#92bed2',
+            stroke: '#3282bf'
+        },
+        purple: {
+            fill: '#ffb5ed',
+            stroke: '#ce21a6'
+        },
+        green: {
+            fill: '#66ff89',
+            stroke: '#0ad132'
+        }
+
+    };
+
+    var male_agg = {{ male_list_agg | safe}};
+    var female_agg = {{ female_list_agg | safe }};
+    var unknown_agg ={{ na_list_agg | safe}};
+    var withoutauthor_agg ={{ withoutauthor_agg | safe}};
+
+    var male_norm = {{ male_list_norm | safe }};
+    var female_norm = {{ female_list_norm | safe }};
+    var unknown_norm = {{ na_list_norm | safe }};
+    var withoutauthor_norm ={{ withoutauthor_norm | safe }};
+
+    var data_for_pie = {{data_for_pie | safe}};
+
+    var top_male_dic = {{ top_male_dic | safe }};
+    var top_female_dic = {{ top_female_dic | safe }};
+    var top_unknown_dic = {{ top_unknown_dic | safe }};
+
+    var scale_max = {{ scale_max |safe}};
+
+    var xData = {{ date_list | safe }};
+
+
+    var pieData = {
+        labels: ["Male", "Female", "Unknown", "Without Author"],
+        datasets: [{
+            label: "Sex",
+            backgroundColor: [colors.blue.stroke, colors.purple.stroke, colors.grey.stroke, colors.green.stroke],
+            data: data_for_pie
+        }]
+    };
+
+    var pieOptions = {
+        responsive: true,
+        animation: {
+            duration: 750
+        }
+    };
+
+    var lineData = {
+        labels: xData,
+        datasets: [{
+            label: "Without Author",
+            fill: true,
+            backgroundColor: colors.green.fill,
+            pointBackgroundColor: colors.green.stroke,
+            borderColor: colors.green.stroke,
+            pointHighlightStroke: colors.green.stroke,
+            borderCapStyle: "butt",
+            data: withoutauthor_agg
+        }, {
+            label: "Unknown",
+            fill: true,
+            backgroundColor: colors.grey.fill,
+            pointBackgroundColor: colors.grey.stroke,
+            borderColor: colors.grey.stroke,
+            pointHighlightStroke: colors.grey.stroke,
+            borderCapStyle: "butt",
+            data: unknown_agg
+        }, {
+
+            label: "Male",
+            fill: true,
+            backgroundColor: colors.blue.fill,
+            pointBackgroundColor: colors.blue.stroke,
+            borderColor: colors.blue.stroke,
+            pointHighlightStroke: colors.blue.stroke,
+            borderCapStyle: "butt",
+            data: male_agg
+
+        }, {
+            label: "Female",
+            fill: true,
+            backgroundColor: colors.purple.fill,
+            pointBackgroundColor: colors.purple.stroke,
+            borderColor: colors.purple.stroke,
+            pointHighlightStroke: colors.purple.stroke,
+            borderCapStyle: "butt",
+            data: female_agg
+        }]
+    };
+    var lineOptions = {
+        responsive: true,
+        scales: {
+            yAxes: [{
+                stacked: true
+            }]
+        },
+
+        animation: {
+            duration: 750
+        },
+        pan: {
+            enabled: true,
+            mode: 'y',
+            rangeMin: {
+                x: null,
+                y: -0.1
+            },
+            rangeMax: {
+                x: null,
+                y: null
+            }
+        },
+        zoom: {
+            enabled: true,
+            drag: false,
+            mode: 'y',
+            rangeMin: {
+                x: null,
+                y: -0.1
+            },
+            rangeMax: {
+                x: null,
+                y: null
+            }
+        }, tooltips: {
+            enabled: true,
+            mode: 'single',
+            callbacks: {
+                label: function (tooltipItems) {
+                    var multistringText = [tooltipItems.yLabel];
+
+                    if (tooltipItems.datasetIndex == 1) {
+                        for (var i = 0; i < top_unknown_dic[xData[tooltipItems.index]].length; i++) {
+                            multistringText.push(top_unknown_dic[xData[tooltipItems.index]][i])
+                        }
+                    }
+
+                    if (tooltipItems.datasetIndex == 2) {
+                        for (var i = 0; i < top_male_dic[xData[tooltipItems.index]].length; i++) {
+                            multistringText.push(top_male_dic[xData[tooltipItems.index]][i])
+                        }
+                    }
+                    if (tooltipItems.datasetIndex == 3) {
+                        for (var i = 0; i < top_female_dic[xData[tooltipItems.index]].length; i++) {
+                            multistringText.push(top_female_dic[xData[tooltipItems.index]][i])
+                        }
+
+                    }
+
+                    return multistringText;
+                }
+            }
+        }
+
+    };
+
+    var chartConfig = {
+        type: 'line',
+        data: lineData,
+        options: lineOptions
+    };
+
+    var chart = new Chart(CanvasContext, chartConfig);
+
+    hide_sliders();
+
+    function change_line_dataset(dataset_type) {
+
+
+        if (chartConfig.type != 'line') {
+            var csvButton = document.getElementById("saveButtonCSV");
+            csvButton.style.display = "inline";
+
+            hide_sliders();
+            chartConfig.type = 'line';
+            chartConfig.options = lineOptions;
+            chartConfig.data = lineData;
+
+            chart.destroy();
+            chart = new Chart(CanvasContext, chartConfig);
+
+        }
+        if (dataset_type == 'norm') {
+            chart.options.scales.yAxes[0].ticks.max = 100;
+            chartType = "norm";
+        } else {
+            chartType = "agg";
+            chart.options.scales.yAxes[0].ticks.max = Math.round(scale_max / 1000) * 1000;
+        }
+
+        chart.data.datasets.forEach(function (dataset) {
+                if (dataset.label == "Unknown") {
+                    dataset.data = dataset_type == "agg" ? unknown_agg : unknown_norm;
+                }
+
+                if (dataset.label == "Male") {
+                    dataset.data = dataset_type == "agg" ? male_agg : male_norm;
+                }
+                if (dataset.label == "Female") {
+                    dataset.data = dataset_type == "agg" ? female_agg : female_norm;
+                }
+
+                if (dataset.label == "Without Author") {
+                    dataset.data = dataset_type == "agg" ? withoutauthor_agg : withoutauthor_norm;
+                }
+
+            }
+        );
+        chart.update();
+    }
+
+
+    var sLastValue = 0;
+    var eLastValue = 0;
+
+    function set_min_max_value() {
+
+        sLastValue = xData[0];
+        eLastValue = xData[xData.length - 1];
+
+
+        startRangeElement.min = xData[0];
+        startRangeElement.max = xData[xData.length - 1];
+
+
+        endRangeElement.min = xData[0];
+        endRangeElement.max = xData[xData.length - 1];
+        endRangeElement.value = xData[xData.length - 1];
+
+
+        sRangeValue.textContent = startRangeElement.value = xData[0];
+        eRangeValue.textContent = xData[xData.length - 1];
+
+    }
+
+
+    function set_dataset(slide_type, x) {
+        function new_pie_data_set(start, end) {
+            var newAll = 0;
+            var newDataSet = [0, 0, 0, 0];
+            var intStart = xData.indexOf(parseInt(start, 10));
+            var intEnd = xData.indexOf(parseInt(end, 10));
+
+            if (intEnd == intStart) {
+                newDataSet[0] = male_norm[intStart];
+                newDataSet[1] = female_norm[intStart];
+                newDataSet[2] = unknown_norm[intStart];
+                newDataSet[3] = withoutauthor_norm[intStart];
+
+            } else {
+
+
+                for (var i = intStart; i < intEnd + 1; i++) {
+                    newAll += male_agg[i] + female_agg[i] + unknown_agg[i] + withoutauthor_agg[i];
+                    newDataSet[0] += male_agg[i];
+                    newDataSet[1] += female_agg[i];
+                    newDataSet[2] += unknown_agg[i];
+                    newDataSet[3] += withoutauthor_agg[i];
+                }
+
+                for (var i = 0; i < 4; i++) {
+                    newDataSet[i] = Math.round(newDataSet[i] / newAll * 10000) / 100;
+                }
+            }
+            console.log(newDataSet);
+
+            return newDataSet;
+        }
+
+        var value = parseInt(x, 10);
+        var index = xData.indexOf(value);
+
+        if (index == -1) {
+            return
+        }
+
+        if (slide_type == "end") {
+            if (xData.indexOf(eLastValue) == -1) {
+                return
+            }
+            eRangeValue.textContent = x;
+
+            if (startRangeElement.value > endRangeElement.value) {
+                return
+            }
+
+
+            chart.data.datasets[0].data = new_pie_data_set(sLastValue, value);
+            chart.update();
+
+            eLastValue = value;
+        }
+        if (slide_type == "start") {
+            if (xData.indexOf(sLastValue) == -1) {
+                return
+            }
+            sRangeValue.textContent = x;
+
+            if (startRangeElement.value > endRangeElement.value) {
+                return
+            }
+
+            chart.data.datasets[0].data = new_pie_data_set(value, eLastValue);
+            chart.update();
+
+            sLastValue = value;
+        }
+
+
+    }
+
+    function show_pie_chart() {
+
+        if (chartConfig.type != 'pie') {
+            var csvButton = document.getElementById("saveButtonCSV");
+            csvButton.style.display = "none";
+            set_min_max_value();
+
+            for (var i = 0; i < slidesClass.length; i++) {
+                slidesClass[i].style.display = "block";
+            }
+
+            chartConfig.type = 'pie';
+            chartConfig.options = pieOptions;
+            chartConfig.data = pieData;
+
+
+            chart.destroy();
+            chart = new Chart(CanvasContext, chartConfig);
+
+
+        }
+
+    }
+
+
+    function hide_sliders() {
+        for (var i = 0; i < slidesClass.length; i++) {
+            slidesClass[i].style.display = "none";
+        }
+
+
+    }
+
+    function saveBase64AsFile() {
+        var chcanvas = document.getElementById("chartCanvas");
+        var link = document.createElement("a");
+        var download_img = "";
+
+        destinationCanvas = document.createElement("canvas");
+        destinationCanvas.width = chcanvas.width;
+        destinationCanvas.height = chcanvas.height;
+
+        destCtx = destinationCanvas.getContext('2d');
+
+        destCtx.fillStyle = "#FFFFFF";
+        destCtx.fillRect(0, 0, chcanvas.width, chcanvas.height);
+
+        destCtx.drawImage(chcanvas, 0, 0);
+
+    
+        document.body.appendChild(link);
+        download_img = destinationCanvas.toDataURL();
+
+        link.setAttribute("href", download_img);
+        link.setAttribute("download", "graph.png");
+        link.click();
+    }
+
+    function saveData() {
+
+
+        var csvContent = "data:text/csv;charset=utf-8,";
+        var i = 0;
+
+        csvContent += "Year,Male,Female,Unknown,Without Author\n";
+        male_agg.forEach(function () {
+            if (chartType == "norm") {
+                csvContent += xData[i] + "," + male_norm[i] + "," + female_norm[i] + "," + unknown_norm[i] + "," + withoutauthor_norm[i] + "\n";
+            } else {
+                csvContent += xData[i] + "," + male_agg[i] + "," + female_agg[i] + "," + unknown_agg[i] + "," + withoutauthor_agg[i] + "\n";
+            }
+
+            i += 1
+        });
+
+        var encodedUri = encodeURI(csvContent);
+        var link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "data.csv");
+        document.body.appendChild(link); // Required for FF
+
+        link.click();
+    }
+
+</script>
+</body>
+</html>
